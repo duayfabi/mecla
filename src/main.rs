@@ -358,7 +358,7 @@ fn ensure_exiftool_available() -> Result<()> {
     let out = Command::new("exiftool")
         .arg("-ver")
         .output()
-        .context("Impossible d'exécuter exiftool. As-tu installé le paquet NixOS `exiftool` ?")?;
+        .context("Impossible d'exécuter exiftool. Le binaire est-il accessible ?")?;
 
     if !out.status.success() {
         bail!("exiftool existe mais retourne une erreur (exiftool -ver)");
