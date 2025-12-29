@@ -23,24 +23,24 @@ enum LogMode {
 #[command(name = "mecla")]
 #[command(about = "Move media files from EXIF/metadata (via exiftool) to YYYY/MM or YYYY/MM <TAG>.")]
 struct Args {
-    /// Répertoire d'entrée (ex: /path/_depot)
+    /// Input directory (e.g., /path/_depot)
     #[arg(long)]
     input: PathBuf,
 
-    /// Répertoire de sortie (où créer YYYY/MM...)
+    /// Output directory (where to create YYYY/MM...)
     #[arg(long)]
     output: PathBuf,
 
-    /// Ne modifie rien, affiche seulement les actions
+    /// Do not modify anything, only display the actions
     #[arg(long, default_value_t = false)]
     dry_run: bool,
 
-    /// Niveau de logs: all, conflicts, errors
+    /// Log level: all, conflicts, errors
     #[arg(long, value_enum, default_value_t = LogMode::Conflicts)]
     log: LogMode,
 
-    /// Extensions supportées (optionnel). Ex: --ext jpg --ext mp4 ...
-    /// Si non fourni, un set par défaut est utilisé.
+    /// Extensions supported (optional). Ex: --ext jpg --ext mp4 ...
+    /// If not provided, a default set is used.
     #[arg(long = "ext")]
     exts: Vec<String>,
 }
@@ -65,14 +65,14 @@ fn run() -> Result<()> {
     let args = Args::parse();
 
     if args.input.as_os_str().is_empty() || args.output.as_os_str().is_empty() {
-        bail!("--input et --output sont obligatoires");
+        bail!("--input and --output are required");
     }
 
     let cfg = Config {
         input: args
             .input
             .canonicalize()
-            .with_context(|| format!("Impossible de résoudre --input: {:?}", args.input))?,
+            .with_context(|| format!("Unable to resolve --input: {:?}", args.input))?,
         output: args.output,
         dry_run: args.dry_run,
         log: args.log,
@@ -87,7 +87,7 @@ fn run() -> Result<()> {
             "jpg", "jpeg", "png", "heic", "gif", "tif", "tiff", // images
             "mp4", "mov", "m4v", "avi", "mkv", "3gp", "mpo",    // vidéos
         ];
-        cfg_log_all(&cfg, &format!("Aucune extension fournie, defaults: {:?}", defaults));
+        cfg_log_all(&cfg, &format!("No extensions provided, defaults: {:?}", defaults));
         // Note: on stocke en minuscules sans point
         // (On reconstruit une liste owned)
         let mut exts = Vec::with_capacity(defaults.len());
@@ -102,7 +102,7 @@ fn run() -> Result<()> {
 
 fn process(cfg: &Config) -> Result<()> {
     if !cfg.input.is_dir() {
-        bail!("--input doit être un répertoire: {:?}", cfg.input);
+        bail!("--input must be a directory: {:?}", cfg.input);
     }
 
     let mut tags_seen: HashSet<String> = HashSet::new();
@@ -219,12 +219,12 @@ fn handle_one(cfg: &Config, src: &Path, tags_seen: &mut HashSet<String>) -> Resu
     }
 
     let dt = extract_datetime_with_exiftool(src)
-        .with_context(|| "Impossible d'extraire une date via exiftool")?;
+        .with_context(|| "Unable to extract a date via exiftool")?;
 
     let ext = src
         .extension()
         .and_then(|s| s.to_str())
-        .ok_or_else(|| anyhow!("Fichier sans extension: {}", src.display()))?
+        .ok_or_else(|| anyhow!("File without extension: {}", src.display()))?
         .to_lowercase();
 
     let target_dir = build_target_dir(&cfg.output, &dt, tag.as_deref());
@@ -249,7 +249,7 @@ fn handle_one(cfg: &Config, src: &Path, tags_seen: &mut HashSet<String>) -> Resu
             &format!("[SKIP-DUP] same hash, delete source: {}", src.display()),
         );
         if !cfg.dry_run {
-            fs::remove_file(src).with_context(|| "suppression source (dup)")?;
+            fs::remove_file(src).with_context(|| "delete source (dup)")?;
         }
         return Ok(());
     }
@@ -275,7 +275,7 @@ fn handle_one(cfg: &Config, src: &Path, tags_seen: &mut HashSet<String>) -> Resu
         }
 
         // si collision, on augmente la longueur du prefix
-        if n >= 20 { bail!("Collision persistante…"); }
+        if n >= 20 { bail!("Persistent collision…"); }
         n += 4;
     }
 
@@ -358,10 +358,10 @@ fn ensure_exiftool_available() -> Result<()> {
     let out = Command::new("exiftool")
         .arg("-ver")
         .output()
-        .context("Impossible d'exécuter exiftool. Le binaire est-il accessible ?")?;
+        .context("Unable to execute exiftool. Is the binary accessible ?")?;
 
     if !out.status.success() {
-        bail!("exiftool existe mais retourne une erreur (exiftool -ver)");
+        bail!("exiftool exists but returns an error (exiftool -ver)");
     }
     Ok(())
 }
@@ -416,7 +416,7 @@ fn extract_datetime_with_exiftool(path: &Path) -> Result<NaiveDateTime> {
     }
 
     bail!(
-        "Aucune date trouvée via tags EXIF/metadata pour {}",
+        "No date found via EXIF/metadata tags for {}",
         path.display()
     );
 }
